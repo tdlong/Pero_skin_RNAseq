@@ -1,0 +1,29 @@
+RNAseq data is perhaps best aligned using other tools.  The reason is that RNAseq raw data reads (in a perfect world) are all exons, so a read can be split, such that parts of the read are separated by an intron (and paired reads can be quite far apart if they span an intron). I like hisat2 for aligning RNAseq data.  Like bwa mem the genome has to be indexed.  There is an option during indexing to tell the indexer about known isoforms in something called a gtf file.  gtf files are readily available for most genomes.
+
+module load hisat2/2.2.1
+ref="ref/dm6.fa.gz"
+gtf="ref/dm6.ncbiRefSeq.gtf.gz"
+python hisat2_extract_splice_sites.py $gtf > dm6.ss
+python hisat2_extract_exons.py $gtf > dm6.exon
+hisat2-build -p 8 --exon dm6.exon --ss dm6.ss $ref dm6_trans
+
+
+Note that this indexing can take some time, and so I requested 8 cores.  You would want to submit this using sbatch and request the proper number of cores.  Once we have the index we can align the RNAseq data
+
+hisat2 -p 2 -x dm6_trans -1 sample1_1.fq.gz -2 sample1_2.fq.gz |\ 
+samtools view -bS - > sample1.bam
+samtools sort sample1.bam -o sample1.sort.bam
+samtools index sample1.sorted.bam
+rm sample1.bam
+
+
+As with previous examples, your scripts are going to need to use bash variables to loop through all the files you have. (In real life I would put dm6_trans in ref). I run hisat2 using 2 cores, you could likely get by with a single core. And you are going to have to put your output in subdirectories not just the root.
+
+
+Here are some tutorials for DEseq2
+
+https://www.bioconductor.org/packages/release/bioc/html/DESeq2.html
+https://www.bioconductor.org/packages/release/bioc/manuals/DESeq2/man/DESeq2.pdf
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4302049/
+https://bioc.ism.ac.jp/packages/2.14/bioc/vignettes/DESeq2/inst/doc/beginner.pdf
+https://www.nathalievialaneix.eu/doc/pdf/tutorial-rnaseq.pdf

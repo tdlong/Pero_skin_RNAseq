@@ -1,0 +1,20 @@
+# Data and references (large; keep on cluster or separate storage)
+data/
+ref/
+
+# Pipeline outputs
+bams/
+counts/
+logs/
+deseq2_results/
+
+# Generated sample list
+samples_to_align.txt
+
+# R
+.Rhistory
+.RData
+.Rproj.user
+
+# OS
+.DS_Store
