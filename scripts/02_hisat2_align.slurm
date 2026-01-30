@@ -3,11 +3,11 @@
 #SBATCH -A tdlong_lab
 #SBATCH -p standard
 #SBATCH --cpus-per-task=2
-#SBATCH --mem-per-cpu=8G
-#SBATCH --time=4:00:00
+#SBATCH --mem-per-cpu=6G
+#SBATCH --time=24:00:00
 #SBATCH --array=1-22
-#SBATCH --output=logs/hisat2_align_%A_%a.out
-#SBATCH --error=logs/hisat2_align_%A_%a.err
+#SBATCH --output=logs/align/%x_%A_%a.out
+#SBATCH --error=logs/align/%x_%A_%a.err
 
 # Align paired-end RNA-seq with HISAT2; output sorted BAMs named by animal ID.
 # Prereqs: run 01_hisat2_build_index.slurm once, then run make_sample_list.sh to create samples_to_align.txt.
@@ -17,7 +17,7 @@
 # module load samtools/1.x
 
 set -e
-mkdir -p logs bams
+mkdir -p logs/align bams
 
 # Paths (run from project root)
 PROJECT_ROOT="${PROJECT_ROOT:-.}"

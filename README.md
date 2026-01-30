@@ -14,6 +14,8 @@ git pull
 
 **On the cluster:** If you already have a project folder with `data/` and `ref/`, clone the repo *into a different name* so you can move the repo contents into that folder (see below). See `scripts/README.md` for run order and module names.
 
+**Logs:** SLURM output goes to `logs/index/`, `logs/align/`, and `logs/counts/` by step; filenames include the job name (e.g. `hisat2_index_47947.out`) so you can tell what each log is. To thin the pile: keep only recent, or archive by date, e.g. `mkdir -p archive/logs && mv logs/* archive/logs/$(date +%Y-%m-%d)/` then rerun; or delete old ones: `find logs -name "*.out" -mtime +30 -delete`.
+
 ## Quick start on cluster
 
 **If you already have a folder with `data/`, `ref/`, and `exp_design.txt`:** clone into a temp dir, then move the repo contents up so `scripts/` sits next to `data/` and `ref/`:
