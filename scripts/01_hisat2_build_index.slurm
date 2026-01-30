@@ -4,7 +4,7 @@
 #SBATCH -p highmem
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=10G
-#SBATCH --time=4:00:00
+#SBATCH --time=8:00:00
 #SBATCH --output=logs/hisat2_build_%j.out
 #SBATCH --error=logs/hisat2_build_%j.err
 
@@ -26,8 +26,9 @@ module load hisat2/2.2.1
 hisat2_extract_splice_sites.py "${GTF}" > "${REF_DIR}/PerLeu.ss"
 hisat2_extract_exons.py "${GTF}"     > "${REF_DIR}/PerLeu.exon"
 
-# Build index (--ss and --exon improve RNA-seq alignment)
-hisat2-build -p 4 --exon "${REF_DIR}/PerLeu.exon" --ss "${REF_DIR}/PerLeu.ss" \
+# Build index (--ss and --exon improve RNA-seq alignment).
+# -a --bmaxdivn 16: use smaller blocks to reduce peak RAM (slower build)
+hisat2-build -p 4 -a --bmaxdivn 16 --exon "${REF_DIR}/PerLeu.exon" --ss "${REF_DIR}/PerLeu.ss" \
   "${REF_FASTA}" "${INDEX_BASE}"
 
 echo "Index build complete: ${INDEX_BASE}"
