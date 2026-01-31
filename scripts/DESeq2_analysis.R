@@ -5,9 +5,10 @@
 # R/4.4.2: If DESeq2 is not installed:
 #   if (!require("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 #   BiocManager::install("DESeq2")
+# Optional: install.packages("pheatmap") for heatmap column annotations (infected, sex)
 #
-# Experimental design: infected (from 16sCt > 10) + sex + infected:sex.
-# Primary interest: infected vs uninfected; sex is covariate.
+# Experimental design: full model ~ sex + infected; sex is covariate, infection is effect of interest.
+# Infection p-values from LRT: full (~ sex + infected) vs reduced (~ sex), so the test is "effect of infection" adjusted for sex.
 # Writes tables (incl. results_infected_by_pvalue.csv), saves R objects and default plots in deseq2_results/saved and deseq2_results/figures.
 # To make custom figures later: obj <- readRDS("deseq2_results/saved/deseq2_objects.rds"); then use obj$dds, obj$vsd, obj$res_infected, obj$normalized_counts, obj$meta, obj$loc_add_to_gene2.
 
@@ -37,8 +38,9 @@ if (file.exists(name_file)) {
   message("Name file not found: ", name_file, " (skipping display names)")
 }
 
-# Design: infected (16sCt > 10) + sex + infected:sex
-DESIGN <- ~ infected + sex + infected:sex
+# Design: sex + infected (main effects only). Infection p-values from LRT vs reduced model ~ sex.
+DESIGN <- ~ sex + infected
+DESIGN_REDUCED <- ~ sex   # reduced model for LRT; LRT tests effect of infection
 
 # Read count matrix (featureCounts: first column is Geneid, then Length, then sample columns)
 cnt <- read.table(count_file, header = TRUE, comment.char = "#", check.names = FALSE)
@@ -74,32 +76,11 @@ dds <- DESeqDataSetFromMatrix(
 keep <- rowSums(counts(dds)) >= 10
 dds <- dds[keep, ]
 
-# Run DESeq2
-dds <- DESeq(dds)
+# Run DESeq2: LRT full (~ sex + infected) vs reduced (~ sex) to get p-values for effect of infection
+dds <- DESeq(dds, test = "LRT", reduced = DESIGN_REDUCED)
 
-# List results available (one per coefficient)
-resultsNames(dds)
-
-# Extract and write results for each coefficient (add display_name from bespoke names)
-for (coef in resultsNames(dds)[-1]) {  # skip intercept
-  res <- results(dds, name = coef)
-  res <- res[order(res$padj), ]
-  res_df <- as.data.frame(res)
-  res_df$gene_id <- rownames(res_df)
-  res_df$display_name <- if (length(loc_add_to_gene2) > 0) {
-    ifelse(res_df$gene_id %in% names(loc_add_to_gene2), loc_add_to_gene2[res_df$gene_id], res_df$gene_id)
-  } else {
-    res_df$gene_id
-  }
-  res_df <- res_df[, c("gene_id", "display_name", setdiff(colnames(res_df), c("gene_id", "display_name")))]
-  fname <- paste0("results_", gsub("[^a-zA-Z0-9]", "_", coef), ".csv")
-  write.csv(res_df, file.path(out_dir, fname), row.names = FALSE)
-  message("Wrote ", fname)
-}
-
-# ---- Main contrast: infected vs uninfected (primary interest; sex is covariate) ----
-coef_infected <- resultsNames(dds)[grepl("^infected_", resultsNames(dds))][1]
-res_infected <- results(dds, name = coef_infected)
+# ---- Main result: effect of infection (adjusted for sex); p-values from LRT (reduced vs full) ----
+res_infected <- results(dds)
 res_infected <- res_infected[order(res_infected$padj, res_infected$pvalue), ]
 summary(res_infected)
 
@@ -188,17 +169,37 @@ dev.off()
 message("Saved: figures/volcano_infected.pdf (install ggrepel for nicer labels)")
 
 # Heatmap: top 50 genes by padj (infected contrast), VST-transformed, row-scaled
+# Columns ordered by infection then sex (grouped: uninfected then infected; within each by sex). Annotation bars: infected, sex.
 top_n <- min(50, nrow(res_infected))
 top_genes <- rownames(res_infected)[order(res_infected$padj)][seq_len(top_n)]
 if (length(top_genes) >= 5) {
   mat <- assay(vsd)[top_genes, ]
   mat <- t(scale(t(mat)))
-  pdf(file.path(fig_dir, "heatmap_top50_infected.pdf"), width = 8, height = max(4, length(top_genes) * 0.12))
-  heatmap(mat, scale = "none", Rowv = NA, Colv = NA,
-          col = colorRampPalette(c("navy", "white", "firebrick3"))(100),
-          main = "Top DE genes (infected vs uninfected)")
-  dev.off()
-  message("Saved: figures/heatmap_top50_infected.pdf")
+  # Order columns: infection first (uninfected then infected), then sex within each
+  ord <- order(meta$infected, meta$sex)
+  mat <- mat[, ord, drop = FALSE]
+  ann_col <- meta[colnames(mat), c("infected", "sex"), drop = FALSE]
+
+  if (requireNamespace("pheatmap", quietly = TRUE)) {
+    pdf(file.path(fig_dir, "heatmap_top50_infected.pdf"), width = 8, height = max(4, length(top_genes) * 0.12))
+    pheatmap::pheatmap(mat,
+                       scale = "none",
+                       cluster_rows = FALSE,
+                       cluster_cols = FALSE,
+                       annotation_col = ann_col,
+                       col = colorRampPalette(c("navy", "white", "firebrick3"))(100),
+                       main = "Top DE genes (infected vs uninfected)",
+                       fontsize_row = 6)
+    dev.off()
+    message("Saved: figures/heatmap_top50_infected.pdf (columns: infection then sex)")
+  } else {
+    pdf(file.path(fig_dir, "heatmap_top50_infected.pdf"), width = 8, height = max(4, length(top_genes) * 0.12))
+    heatmap(mat, scale = "none", Rowv = NA, Colv = NA,
+            col = colorRampPalette(c("navy", "white", "firebrick3"))(100),
+            main = "Top DE genes (infected vs uninfected)")
+    dev.off()
+    message("Saved: figures/heatmap_top50_infected.pdf (install pheatmap for column annotations: infected, sex)")
+  }
 }
 
 message("Results, tables, and figures written to ", out_dir)

@@ -53,7 +53,12 @@ sbatch scripts/04_deseq2.slurm
 
 4. **Counts** – featureCounts assigns reads to genes using the GTF. Output: `counts/counts.txt` (gene × sample matrix).
 
-5. **Differential expression** – DESeq2 models counts as a function of **infected** (from 16sCt > 10) and **sex**, with interaction. Primary contrast: infected vs uninfected; sex is a covariate. Outputs live under `deseq2_results/`.
+5. **Differential expression** – DESeq2 full model: **sex + infected** (sex as covariate). We want the p-value for the **effect of infection**; that comes from a likelihood-ratio test: full model (~ sex + infected) vs reduced model (~ sex). So we fit sex + infected and test “does adding infection improve the model?” — that’s the infection effect adjusted for sex. Primary table: infected vs uninfected (LRT padj, log2FC). Outputs live under `deseq2_results/`.
+
+**Model and testing (documented):**
+- **Full model:** `~ sex + infected`. Sex and infection are the two variables of interest; sex is fitted as a covariate so the infection effect is adjusted for it.
+- **Infection p-values:** From LRT: compare full (~ sex + infected) to reduced (~ sex). The LRT p-value is "effect of infection" (one per gene). No Wald on a single coefficient; we use the reduced-model comparison so the test is exactly "does infection matter, given sex?"
+- **Heatmap:** Top 50 DE genes (infected contrast). Columns = samples **grouped by infection, then by sex within infection** (uninfected first, then infected; within each, ordered by sex). Column annotation bars show infected and sex. Requires R package `pheatmap`.
 
 ### Key outputs (so you know what each file is)
 
@@ -63,7 +68,7 @@ sbatch scripts/04_deseq2.slurm
 |------|------------|
 | `results_infected_by_pvalue.csv` | **Primary table.** Infected vs uninfected, one row per gene, sorted by adjusted p-value. Columns include `gene_id`, `display_name` (bespoke name when in `ref/cds_Pleuc_names_v6.txt`), log2FC, padj, etc. |
 | `normalized_counts.csv` | Normalized counts (gene × sample) plus `gene_id` and `display_name`, for plotting. |
-| `results_<coef>_*.csv` | Full set of contrasts (infected, sex, infected:sex); same format as above. |
+| (other CSVs) | Primary output is `results_infected_by_pvalue.csv` (infection effect from LRT). |
 
 **Saved R objects (in `deseq2_results/saved/`)**
 
@@ -78,4 +83,4 @@ sbatch scripts/04_deseq2.slurm
 | `PCA_infected_sex.pdf` | PCA of samples (VST-transformed counts), colored by **infected**, shaped by **sex**. Quick check that infection and sex separate samples. |
 | `MA_infected.pdf` | MA plot for infected vs uninfected: log2 fold change vs mean expression; DE genes stand out. |
 | `volcano_infected.pdf` | Volcano plot: log2FC vs -log10(adj p). Points colored by padj &lt; 0.05; **top 20 genes by padj labeled** (display_name). Install `ggrepel` for non-overlapping labels. |
-| `heatmap_top50_infected.pdf` | Heatmap of the top 50 genes by padj (infected contrast); rows = genes (row-scaled), columns = samples. VST-transformed counts. |
+| `heatmap_top50_infected.pdf` | Heatmap of the top 50 genes by padj (infected contrast). Rows = genes (row-scaled), columns = samples **ordered by infection then sex** (uninfected then infected; within each group by sex). Column annotation bars show **infected** and **sex**. VST-transformed counts. Requires `pheatmap`. |
