@@ -19,9 +19,10 @@ Pipeline: HISAT2 index → align (BAMs by animal ID) → featureCounts → DESeq
    `sbatch scripts/03_featurecounts.slurm`  
    Output: `counts/counts.txt`
 
-5. **DESeq2** (in R):  
-   Edit `scripts/DESeq2_analysis.R` (set `DESIGN` and paths), then run in R or `Rscript scripts/DESeq2_analysis.R`.  
-   Results: `deseq2_results/results.csv`, `normalized_counts.csv`.
+5. **DESeq2** (single job on highmem):  
+   `sbatch scripts/04_deseq2.slurm`  
+   Loads R/4.4.2 and runs `scripts/DESeq2_analysis.R`. Output: `deseq2_results/` (tables, saved R objects, figures).  
+   Or run interactively: `Rscript scripts/DESeq2_analysis.R`.
 
 ## Programs / modules
 
@@ -30,7 +31,7 @@ Pipeline: HISAT2 index → align (BAMs by animal ID) → featureCounts → DESeq
 | 01   | `hisat2/2.2.1` |
 | 02   | `hisat2/2.2.1`, `samtools/1.15.1` |
 | 03   | `subread/2.0.3` |
-| 05   | `R/4.4.2` + DESeq2 (see below) |
+| 04   | `R/4.4.2` + DESeq2 (see below) |
 
 **DESeq2 in R/4.4.2:** If DESeq2 is not already installed, load R and run once:
 ```r
