@@ -30,10 +30,9 @@ if [ ! -f "${BAMS[0]}" ]; then
   exit 1
 fi
 
-featureCounts -T 4 -t exon -g gene_id \
+featureCounts -T 4 -p -t exon -g gene_id \
   -a "${GTF}" \
   -o "${OUT_PREFIX}.txt" \
-  --countReadPairs \
   "${BAMS[@]}"
 
 echo "Count matrix: ${OUT_PREFIX}.txt"
