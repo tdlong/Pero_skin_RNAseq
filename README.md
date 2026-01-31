@@ -58,7 +58,7 @@ sbatch scripts/04_deseq2.slurm
 **Model and testing (documented):**
 - **Full model:** `~ sex + infected`. Sex and infection are the two variables of interest; sex is fitted as a covariate so the infection effect is adjusted for it.
 - **Infection p-values:** From LRT: compare full (~ sex + infected) to reduced (~ sex). The LRT p-value is "effect of infection" (one per gene). No Wald on a single coefficient; we use the reduced-model comparison so the test is exactly "does infection matter, given sex?"
-- **Heatmap:** Top 50 DE genes (infected contrast). Columns = samples **grouped by infection, then by sex within infection** (uninfected first, then infected; within each, ordered by sex). Column annotation bars show infected and sex. Requires R package `pheatmap`.
+- **Heatmap:** Top 50 DE genes (infected contrast). Columns = samples **ordered by treatment** (infected males → infected females → uninfected males → uninfected females); no clustering by expression. X-axis = two annotation rows (Infected, Sex) only — no sample IDs. Every row labeled (small font). Requires R package `pheatmap`. Remake locally: `Rscript scripts/heatmap_top50_only.R [deseq2_results]`.
 
 ### Key outputs (so you know what each file is)
 
@@ -83,4 +83,4 @@ sbatch scripts/04_deseq2.slurm
 | `PCA_infected_sex.pdf` | PCA of samples (VST-transformed counts), colored by **infected**, shaped by **sex**. Quick check that infection and sex separate samples. |
 | `MA_infected.pdf` | MA plot for infected vs uninfected: log2 fold change vs mean expression; DE genes stand out. |
 | `volcano_infected.pdf` | Volcano plot: log2FC vs -log10(adj p). Points colored by padj &lt; 0.05; **top 20 genes by padj labeled** (display_name). Install `ggrepel` for non-overlapping labels. |
-| `heatmap_top50_infected.pdf` | Heatmap of the top 50 genes by padj (infected contrast). Rows = genes (row-scaled), columns = samples **ordered by infection then sex** (uninfected then infected; within each group by sex). Column annotation bars show **infected** and **sex**. VST-transformed counts. Requires `pheatmap`. |
+| `heatmap_top50_infected.pdf` | Heatmap of the top 50 genes by padj (infected contrast). Columns **ordered by treatment**: infected males, infected females, uninfected males, uninfected females. Rows = genes (row-scaled), every row labeled; x-axis = two annotation rows (Infected, Sex) only — no sample IDs. Remake locally: `Rscript scripts/heatmap_top50_only.R [deseq2_results]`. Requires `pheatmap`. |

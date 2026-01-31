@@ -15,6 +15,7 @@ samples_to_align.txt
 .Rhistory
 .RData
 .Rproj.user
+.R_libs/
 
 # OS
 .DS_Store

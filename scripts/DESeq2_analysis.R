@@ -169,13 +169,19 @@ dev.off()
 message("Saved: figures/volcano_infected.pdf (install ggrepel for nicer labels)")
 
 # Heatmap: top 50 genes by padj (infected contrast), VST-transformed, row-scaled
-# X-axis: two rows of colored squares (Infected, Sex) — no sample IDs. Infected = filled vs unfilled; Sex = blue (male), red (female).
+# X-axis: two rows (Infected, Sex); columns ordered by treatment: infected M, infected F, uninfected M, uninfected F (no sample IDs).
 top_n <- min(50, nrow(res_infected))
 top_genes <- rownames(res_infected)[order(res_infected$padj)][seq_len(top_n)]
 if (length(top_genes) >= 5) {
   mat <- assay(vsd)[top_genes, ]
   mat <- t(scale(t(mat)))
-  # Column annotation: two rows of squares (Infected, Sex); readable labels, explicit colors
+  # Order columns by treatment: infected males, infected females, uninfected males, uninfected females
+  treatment_order <- factor(
+    paste(meta[colnames(mat), "infected"], meta[colnames(mat), "sex"]),
+    levels = c("infected Male", "infected Female", "uninfected Male", "uninfected Female")
+  )
+  ord <- order(treatment_order)
+  mat <- mat[, ord, drop = FALSE]
   ann_col <- as.data.frame(meta[colnames(mat), c("infected", "sex"), drop = FALSE])
   colnames(ann_col) <- c("Infected", "Sex")
   ann_colors <- list(
@@ -188,7 +194,7 @@ if (length(top_genes) >= 5) {
     pheatmap::pheatmap(mat,
                        scale = "none",
                        cluster_rows = FALSE,
-                       cluster_cols = TRUE,
+                       cluster_cols = FALSE,
                        annotation_col = ann_col,
                        annotation_colors = ann_colors,
                        show_colnames = FALSE,
