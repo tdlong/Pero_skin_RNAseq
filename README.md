@@ -37,3 +37,5 @@ sbatch scripts/02_hisat2_align.slurm
 sbatch scripts/03_featurecounts.slurm
 # then run DESeq2 in R (see scripts/DESeq2_analysis.R)
 ```
+
+**featureCounts:** The step 3 logs report “Successfully assigned alignments” as a fraction of total alignments. Only about 20–25% of read pairs are assigned to features (exons/genes) in this pipeline; that is what featureCounts reports and is expected (many alignments fall in introns, intergenic, or multimapping and are not counted toward gene expression).
