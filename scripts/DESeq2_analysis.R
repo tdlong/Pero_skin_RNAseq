@@ -169,29 +169,34 @@ dev.off()
 message("Saved: figures/volcano_infected.pdf (install ggrepel for nicer labels)")
 
 # Heatmap: top 50 genes by padj (infected contrast), VST-transformed, row-scaled
-# Columns ordered by infection then sex (grouped: uninfected then infected; within each by sex). Annotation bars: infected, sex.
+# X-axis: two rows of colored squares (Infected, Sex) — no sample IDs. Infected = filled vs unfilled; Sex = blue (male), red (female).
 top_n <- min(50, nrow(res_infected))
 top_genes <- rownames(res_infected)[order(res_infected$padj)][seq_len(top_n)]
 if (length(top_genes) >= 5) {
   mat <- assay(vsd)[top_genes, ]
   mat <- t(scale(t(mat)))
-  # Order columns: infection first (uninfected then infected), then sex within each
-  ord <- order(meta$infected, meta$sex)
-  mat <- mat[, ord, drop = FALSE]
-  ann_col <- meta[colnames(mat), c("infected", "sex"), drop = FALSE]
+  # Column annotation: two rows of squares (Infected, Sex); readable labels, explicit colors
+  ann_col <- as.data.frame(meta[colnames(mat), c("infected", "sex"), drop = FALSE])
+  colnames(ann_col) <- c("Infected", "Sex")
+  ann_colors <- list(
+    Infected = c(uninfected = "grey95", infected = "darkred"),
+    Sex      = c(Female = "red", Male = "blue")
+  )
 
   if (requireNamespace("pheatmap", quietly = TRUE)) {
     pdf(file.path(fig_dir, "heatmap_top50_infected.pdf"), width = 8, height = max(4, length(top_genes) * 0.12))
     pheatmap::pheatmap(mat,
                        scale = "none",
                        cluster_rows = FALSE,
-                       cluster_cols = FALSE,
+                       cluster_cols = TRUE,
                        annotation_col = ann_col,
+                       annotation_colors = ann_colors,
+                       show_colnames = FALSE,
                        col = colorRampPalette(c("navy", "white", "firebrick3"))(100),
                        main = "Top DE genes (infected vs uninfected)",
                        fontsize_row = 6)
     dev.off()
-    message("Saved: figures/heatmap_top50_infected.pdf (columns: infection then sex)")
+    message("Saved: figures/heatmap_top50_infected.pdf (annotation: Infected, Sex; no sample IDs)")
   } else {
     pdf(file.path(fig_dir, "heatmap_top50_infected.pdf"), width = 8, height = max(4, length(top_genes) * 0.12))
     heatmap(mat, scale = "none", Rowv = NA, Colv = NA,
